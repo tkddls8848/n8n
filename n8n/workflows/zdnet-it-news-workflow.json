@@ -1,0 +1,195 @@
+{
+  "name": "ZDNet IT 인프라 뉴스 수집",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "매일 오전 9시 실행",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://zdnet.co.kr/feed/",
+        "options": {}
+      },
+      "id": "rss-read-zdnet",
+      "name": "ZDNet RSS 피드 읽기",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.0,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RSS 피드에서 기사 정보 추출\nreturn $input.item.json.map(item => ({\n  json: {\n    url: item.link,\n    title: item.title,\n    date: item.pubDate,\n    collected_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "code-parse-articles",
+      "name": "기사 정보 추출",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "http-request-article",
+      "name": "각 기사 상세 정보 가져오기",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 기사 제목, 날짜, 요약 추출\nconst html = $input.item.json.data;\nconst url = $input.item.json.url;\n\n// HTML에서 정보 추출 (실제 ZDNet 구조에 맞게 수정 필요)\nlet title = '';\nlet date = '';\nlet summary = '';\n\n// 제목 추출 예시\nconst titleMatch = html.match(/<h1[^>]*>([^<]+)<\\/h1>/);\nif (titleMatch) title = titleMatch[1].trim();\n\n// 날짜 추출 예시\nconst dateMatch = html.match(/<time[^>]*datetime=\"([^\"]+)\"/);\nif (dateMatch) date = dateMatch[1];\n\n// 요약 추출 예시\nconst summaryMatch = html.match(/<meta[^>]*name=\"description\"[^>]*content=\"([^\"]+)\"/);\nif (summaryMatch) summary = summaryMatch[1];\n\n// 24시간 이내 기사만 필터링\nconst articleDate = new Date(date);\nconst oneDayAgo = new Date();\noneDayAgo.setDate(oneDayAgo.getDate() - 1);\n\nif (articleDate < oneDayAgo) {\n  return [];\n}\n\nreturn {\n  json: {\n    title: title,\n    url: url,\n    date: date,\n    summary: summary\n  }\n};"
+      },
+      "id": "code-extract-article-info",
+      "name": "기사 정보 추출 및 필터링",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "aggregate-articles",
+      "name": "기사 목록 집계",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1570, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 이메일 HTML 본문 생성\nconst articles = $input.all();\n\nif (articles.length === 0) {\n  return {\n    json: {\n      subject: 'ZDNet IT인프라 뉴스 - 신규 기사 없음',\n      html: '<h2>오늘 새로운 IT인프라 관련 기사가 없습니다.</h2>'\n    }\n  };\n}\n\nlet html = `\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; }\n    h2 { color: #333; }\n    .article { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }\n    .article h3 { margin-top: 0; color: #0066cc; }\n    .article a { color: #0066cc; text-decoration: none; }\n    .article a:hover { text-decoration: underline; }\n    .date { color: #666; font-size: 0.9em; }\n    .summary { color: #444; margin-top: 10px; }\n  </style>\n</head>\n<body>\n  <h2>ZDNet IT인프라 최신 뉴스 (${new Date().toLocaleDateString('ko-KR')})</h2>\n  <p>총 <strong>${articles.length}</strong>개의 새로운 기사</p>\n`;\n\narticles.forEach((item, index) => {\n  const article = item.json;\n  html += `\n  <div class=\"article\">\n    <h3>${index + 1}. <a href=\"${article.url}\" target=\"_blank\">${article.title}</a></h3>\n    <div class=\"date\">📅 ${new Date(article.date).toLocaleString('ko-KR')}</div>\n    ${article.summary ? `<div class=\"summary\">${article.summary}</div>` : ''}\n  </div>\n  `;\n});\n\nhtml += `\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    subject: `ZDNet IT인프라 뉴스 - ${articles.length}개의 새로운 기사`,\n    html: html\n  }\n};"
+      },
+      "id": "code-format-email",
+      "name": "이메일 본문 생성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1790, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yourdomain.com",
+        "toEmail": "your-email@example.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "이메일 발송",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2010, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SMTP account"
+        }
+      },
+      "notes": "SMTP 설정 필요 (Gmail, Outlook 등)"
+    }
+  ],
+  "connections": {
+    "매일 오전 9시 실행": {
+      "main": [
+        [
+          {
+            "node": "rss-read-zdnet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rss-read-zdnet": {
+      "main": [
+        [
+          {
+            "node": "기사 URL 추출",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "기사 URL 추출": {
+      "main": [
+        [
+          {
+            "node": "각 기사 상세 정보 가져오기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "각 기사 상세 정보 가져오기": {
+      "main": [
+        [
+          {
+            "node": "기사 정보 추출 및 필터링",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "기사 정보 추출 및 필터링": {
+      "main": [
+        [
+          {
+            "node": "기사 목록 집계",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "기사 목록 집계": {
+      "main": [
+        [
+          {
+            "node": "이메일 본문 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "이메일 본문 생성": {
+      "main": [
+        [
+          {
+            "node": "이메일 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-11-27T12:00:00.000Z",
+  "versionId": "1"
+}

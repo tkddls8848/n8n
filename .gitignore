@@ -1,0 +1,38 @@
+# Node modules
+**/node_modules
+node_modules/
+
+# Environment variables
+.env
+**/.env
+!**/.env.example
+
+# n8n specific
+n8n/.n8n/
+n8n/postgres-data/
+n8n/n8n-data/
+n8n/.git/
+
+# email-server specific
+email-server/.env
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+**/.git/

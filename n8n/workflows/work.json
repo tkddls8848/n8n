@@ -1,0 +1,399 @@
+{
+    "meta": {
+      "instanceId": "6cdbf57e7035d3e617d2b60161d6112ec5ad3a16e1cfb77a74071016efecef02"
+    },
+    "name": "IT Infrastructure Daily Digest",
+    "tags": [],
+    "nodes": [
+      {
+        "id": "14994381-59c1-4a78-903d-7d5a7331da0e",
+        "name": "Sticky Note - Overview",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -2960,
+          -80
+        ],
+        "parameters": {
+          "color": 5,
+          "width": 520,
+          "height": 340,
+          "content": "# 📬 IT 인프라 일일 뉴스레터\n\n**기능:**\n클라우드, 데이터센터, 쿠버네티스, AWS 등 IT 인프라 관련 최신 뉴스를 자동으로 수집하고 요약하여 이메일로 발송합니다.\n\n**작동 방식:**\n1. 매일 오전 7시에 자동 실행\n2. ZDNet, ITWorld RSS 피드에서 기사 수집\n3. Claude AI로 IT 인프라 관련 기사 필터링 및 요약\n4. 로컬 메일 서버(localhost:3000)로 이메일 전송\n\n**커스터마이징:**\n- RSS 소스는 'Tech News Sites' 노드에서 변경\n- 키워드는 'Analyze document' 노드에서 수정\n- 이메일 주소는 'Send email via API' 노드에서 변경\n- 실행 시간은 트리거 노드에서 조정"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "23f5f52a-4493-4dca-b093-57af26d260e2",
+        "name": "Sticky Note - Trigger",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -2368,
+          304
+        ],
+        "parameters": {
+          "color": 3,
+          "width": 280,
+          "height": 220,
+          "content": "## 📅 매일 오전 7시 실행\n스케줄 트리거"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "ad00a451-044d-4a93-b82e-35101217f111",
+        "name": "Schedule Trigger1",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "position": [
+          -2272,
+          384
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 7
+              }
+            ]
+          }
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "712ba274-a397-4cd7-91ce-d6f26d07dd80",
+        "name": "Sticky Note - Sources",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -2032,
+          208
+        ],
+        "parameters": {
+          "color": 4,
+          "width": 280,
+          "height": 360,
+          "content": "## 📰 RSS 피드 소스\nIT 인프라 관련 뉴스를 수집할 RSS 피드 정의"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "d29d564d-0125-437b-9922-e19bc483289c",
+        "name": "Tech News Sites",
+        "type": "n8n-nodes-base.set",
+        "position": [
+          -1936,
+          336
+        ],
+        "parameters": {
+          "mode": "raw",
+          "options": {},
+          "jsonOutput": "{\"url\": [\n  \"https://zdnet.co.kr/feed/\",\n  \"https://www.itworld.co.kr/feed/\"\n]}"
+        },
+        "typeVersion": 3.4
+      },
+      {
+        "id": "0460882d-8869-43ce-be88-2701f84f80b6",
+        "name": "Sticky Note - Processing",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -1712,
+          208
+        ],
+        "parameters": {
+          "color": 6,
+          "width": 820,
+          "height": 364,
+          "content": "## 📄 RSS 피드 처리\nRSS 피드를 분할하고 순회하며 콘텐츠 가져오기"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "3d3910c4-20f6-436a-b71b-cb60ce2001b0",
+        "name": "Split Out",
+        "type": "n8n-nodes-base.splitOut",
+        "position": [
+          -1632,
+          336
+        ],
+        "parameters": {
+          "options": {},
+          "fieldToSplitOut": "url"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "b1d6beb3-f1ac-436f-aa56-2578b6adaf39",
+        "name": "Loop Over Items",
+        "type": "n8n-nodes-base.splitInBatches",
+        "position": [
+          -1440,
+          336
+        ],
+        "parameters": {
+          "options": {},
+          "batchSize": 2
+        },
+        "typeVersion": 3
+      },
+      {
+        "id": "127fb49f-55b7-4253-a365-933286e5ab8d",
+        "name": "RSS Read OF Tech News",
+        "type": "n8n-nodes-base.rssFeedRead",
+        "onError": "continueRegularOutput",
+        "position": [
+          -1216,
+          336
+        ],
+        "parameters": {
+          "url": "={{ $('Split Out').item.json.url }}",
+          "options": {}
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "57c8972a-273e-4025-9695-3688281e1376",
+        "name": "Sticky Note - Convert",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -992,
+          208
+        ],
+        "parameters": {
+          "color": 2,
+          "width": 260,
+          "height": 364,
+          "content": "## 📦 CSV 변환\nAI 분석을 위해 CSV로 변환"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "474180f0-97b6-4308-a83e-442cc0d29489",
+        "name": "Convert To CSV",
+        "type": "n8n-nodes-base.convertToFile",
+        "position": [
+          -896,
+          336
+        ],
+        "parameters": {
+          "options": {}
+        },
+        "typeVersion": 1.1
+      },
+      {
+        "id": "81e6441b-2f11-4e89-aca6-d2a207359367",
+        "name": "Sticky Note - AI",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -672,
+          208
+        ],
+        "parameters": {
+          "color": 7,
+          "width": 540,
+          "height": 364,
+          "content": "## 🤖 AI 큐레이션\n\nClaude AI가 콘텐츠를 분석하고 IT 인프라 관련 기사를 선별하여 요약합니다.\n\n**참고:** 'Analyze document' 노드의 프롬프트에서 키워드를 수정하세요.\n\n"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "bac6a4ba-594c-40e9-9618-d25363ba6421",
+        "name": "Upload a file",
+        "type": "@n8n/n8n-nodes-langchain.anthropicChat",
+        "position": [
+          -576,
+          336
+        ],
+        "parameters": {
+          "resource": "file",
+          "inputType": "binary"
+        },
+        "credentials": {
+          "anthropicApi": {
+            "id": "1",
+            "name": "Anthropic API account"
+          }
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "3b565d0a-9fdf-433d-ad5b-b71ac3232f66",
+        "name": "Analyze document",
+        "type": "@n8n/n8n-nodes-langchain.anthropicChat",
+        "position": [
+          -336,
+          336
+        ],
+        "parameters": {
+          "model": "claude-sonnet-4-20250514",
+          "text": "# IT 인프라 뉴스 큐레이터\n\n다음은 오늘 수집된 IT 뉴스 기사 목록입니다:\n{news_list}\n\n## 작업:\n- **IT 인프라 관련 키워드**를 기준으로 **상위 10-15개 기사**를 선별하세요:\n  - 키워드: [\"클라우드\", \"데이터센터\", \"쿠버네티스\", \"AWS\", \"Azure\", \"GCP\", \"인프라\", \"DevOps\", \"컨테이너\", \"서버리스\", \"마이크로서비스\", \"네트워크\", \"보안\", \"모니터링\"]\n- 각 기사를 **2-3줄로 요약**하세요\n- **이미지 URL이 제공되면** 제목 아래에 표시하세요\n- 톤: \"전문적이고 간결하며, 기술적 정확성에 중점\"\n- 아래 HTML 템플릿을 사용하여 포맷하세요\n\n## HTML 템플릿:\n```html\n<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>IT 인프라 일일 다이제스트</title>\n    <style>\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, Arial, sans-serif;\n            background: #f5f5f5;\n            margin: 0;\n            padding: 16px;\n            line-height: 1.6;\n            font-size: 15px;\n            color: #333;\n        }\n        \n        .container {\n            max-width: 680px;\n            margin: 0 auto;\n            background: #ffffff;\n            border-radius: 8px;\n            box-shadow: 0 2px 8px rgba(0,0,0,0.1);\n        }\n        \n        .header {\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            color: #fff;\n            padding: 24px;\n            border-radius: 8px 8px 0 0;\n        }\n        \n        .header h1 {\n            font-size: 24px;\n            font-weight: 700;\n            margin: 0 0 8px 0;\n        }\n        \n        .header p {\n            font-size: 14px;\n            margin: 0;\n            opacity: 0.9;\n        }\n        \n        .content {\n            padding: 24px;\n        }\n        \n        .section {\n            margin-bottom: 32px;\n        }\n        \n        .section-title {\n            font-size: 18px;\n            font-weight: 700;\n            color: #667eea;\n            margin: 0 0 20px 0;\n            padding-bottom: 8px;\n            border-bottom: 2px solid #667eea;\n        }\n        \n        .item {\n            margin-bottom: 24px;\n            padding: 16px;\n            background: #f9fafb;\n            border-radius: 8px;\n            border-left: 4px solid #667eea;\n        }\n        \n        .item-title {\n            font-size: 16px;\n            font-weight: 600;\n            color: #1a1a1a;\n            margin: 0 0 12px 0;\n        }\n        \n        .item-image {\n            width: 100%;\n            height: auto;\n            border-radius: 8px;\n            margin-bottom: 12px;\n            display: block;\n        }\n        \n        .item-summary {\n            font-size: 14px;\n            color: #555;\n            margin: 0 0 12px 0;\n            line-height: 1.6;\n        }\n        \n        .item-meta {\n            display: flex;\n            gap: 12px;\n            font-size: 13px;\n            color: #888;\n            margin-bottom: 8px;\n        }\n        \n        .item-link {\n            display: inline-block;\n            color: #667eea;\n            text-decoration: none;\n            font-size: 14px;\n            font-weight: 600;\n            padding: 8px 16px;\n            background: #f0f4ff;\n            border-radius: 4px;\n            transition: all 0.2s;\n        }\n        \n        .item-link:hover {\n            background: #667eea;\n            color: white;\n        }\n        \n        .footer {\n            background: #f9fafb;\n            padding: 20px;\n            text-align: center;\n            font-size: 13px;\n            color: #666;\n            border-radius: 0 0 8px 8px;\n            border-top: 1px solid #e5e7eb;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h1>☁️ IT 인프라 일일 다이제스트</h1>\n            <p>{current_date}</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"section\">\n                <h2 class=\"section-title\">📰 오늘의 IT 인프라 뉴스</h2>\n                \n                <div class=\"item\">\n                    <div class=\"item-meta\">\n                        <span>📅 {pubDate}</span>\n                        <span>📌 {source}</span>\n                    </div>\n                    <div class=\"item-title\">{기사 제목}</div>\n                    <img src=\"{image_url}\" alt=\"{기사 제목}\" class=\"item-image\" onerror=\"this.style.display='none'\">\n                    <div class=\"item-summary\">\n                        {2-3줄 요약}\n                    </div>\n                    <a href=\"{article_link}\" class=\"item-link\">전문 읽기 →</a>\n                </div>\n                \n                <!-- 더 많은 기사들... -->\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            ⚡ 매일 오전 7시 자동 발송 | IT 인프라 트렌드를 놓치지 마세요\n        </div>\n    </div>\n</body>\n</html>\n```",
+          "options": {},
+          "resource": "document",
+          "documentUrls": "={{ $json.fileUri }}"
+        },
+        "credentials": {
+          "anthropicApi": {
+            "id": "1",
+            "name": "Anthropic API account"
+          }
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "b52be0db-7f23-42f5-be51-ef974fea34a7",
+        "name": "Sticky Note - Email",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -64,
+          208
+        ],
+        "parameters": {
+          "width": 520,
+          "height": 364,
+          "content": "## 📧 뉴스레터 발송\n\n로컬 메일 서버(localhost:3000)를 통해 이메일 발송\n\n**참고:**\n'Send email via API' 노드에서 받는 사람 이메일 주소를 변경하세요.\n"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "df2a0631-fa25-4eb6-a1dc-5d99a82c481d",
+        "name": "Code in JavaScript",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          48,
+          336
+        ],
+        "parameters": {
+          "jsCode": "// Claude API 응답에서 HTML 추출\nlet htmlText = $input.first().json.content;\n\n// \\n 제거 및 공백 정리\nif (typeof htmlText === 'string') {\n  htmlText = htmlText.replace(/\\n/g, \"\").trim();\n  \n  // ```html 마크다운 코드 블록 제거\n  htmlText = htmlText.replace(/^```html/, '').replace(/```$/, '').trim();\n}\n\n// JSON으로 반환\nreturn [{ \n  json: { \n    html: htmlText,\n    date: new Date().toLocaleDateString('ko-KR', {\n      year: 'numeric',\n      month: 'long',\n      day: 'numeric',\n      weekday: 'long'\n    })\n  } \n}];"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "9ec9cefa-4888-424c-96ce-8241328a9164",
+        "name": "Send email via API",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          272,
+          336
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://localhost:3000/send-email",
+          "authentication": "none",
+          "sendBody": true,
+          "bodyContentType": "json",
+          "jsonBody": "={\n  \"to\": \"your-email@naver.com\",\n  \"subject\": \"☁️ IT 인프라 일일 다이제스트 - {{ $json.date }}\",\n  \"html\": {{ JSON.stringify($json.html) }}\n}",
+          "options": {}
+        },
+        "typeVersion": 4.2
+      }
+    ],
+    "active": false,
+    "pinData": {},
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "",
+    "connections": {
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Convert To CSV": {
+        "main": [
+          [
+            {
+              "node": "Upload a file",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Upload a file": {
+        "main": [
+          [
+            {
+              "node": "Analyze document",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Items": {
+        "main": [
+          [
+            {
+              "node": "Convert To CSV",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "RSS Read OF Tech News",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tech News Sites": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Analyze document": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Schedule Trigger1": {
+        "main": [
+          [
+            {
+              "node": "Tech News Sites",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript": {
+        "main": [
+          [
+            {
+              "node": "Send email via API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "RSS Read OF Tech News": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
